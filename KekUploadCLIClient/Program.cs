@@ -1,10 +1,14 @@
-﻿using System.Security.Cryptography;
+﻿using System;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Security.Cryptography;
 
 namespace KekUploadCLIClient
 {
     class Program
     {
-        public static String version = "1.0.0";
+        public static string version = "1.0.0";
 
 
         public static void Main(string[] args) {
