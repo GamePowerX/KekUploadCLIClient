@@ -29,6 +29,16 @@ jobs:
         # A file, directory or wildcard pattern that describes what to upload
         path: KekUploadCLIClient/bin/Release/net6.0/linux-x64/publish/KekUploadCLIClient
         # The desired behavior if no files are found using the provided path.
+        
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: target/release/${{ matrix.artifact_name }}
+        asset_name: ${{ matrix.asset_name }}
+        tag: ${{ github.ref }}
+        
+        
   buildWindows:
 
     runs-on: windows-latest
@@ -51,6 +61,15 @@ jobs:
         # A file, directory or wildcard pattern that describes what to upload
         path: KekUploadCLIClient/bin/release/net6.0/win-x64/publish/KekUploadCLIClient.exe
         # The desired behavior if no files are found using the provided path.
+        
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: target/release/${{ matrix.artifact_name }}
+        asset_name: ${{ matrix.asset_name }}
+        tag: ${{ github.ref }}
+        
   buildMacOs:
 
     runs-on: macos-latest
@@ -73,3 +92,39 @@ jobs:
         # A file, directory or wildcard pattern that describes what to upload
         path: KekUploadCLIClient/bin/Release/net6.0/osx-x64/publish/KekUploadCLIClient
         # The desired behavior if no files are found using the provided path.
+        
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: target/release/${{ matrix.artifact_name }}
+        asset_name: ${{ matrix.asset_name }}
+        tag: ${{ github.ref }}
+        
+  publish:
+    name: Publish for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: KekUploadCLIClient/bin/Release/net6.0/linux-x64/publish/KekUploadCLIClient
+            asset_name: KekUploadCLIClient-linux-amd64
+          - os: windows-latest
+            artifact_name: KekUploadCLIClient/bin/Release/net6.0/win-x64/publish/KekUploadCLIClient.exe
+            asset_name: KekUploadCLIClient-windows-amd64
+          - os: macos-latest
+            artifact_name: KekUploadCLIClient/bin/Release/net6.0/osx-x64/publish/KekUploadCLIClient
+            asset_name: KekUploadCLIClient-macos-amd64
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: cargo build --release --locked
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: target/release/${{ matrix.artifact_name }}
+        asset_name: ${{ matrix.asset_name }}
+        tag: ${{ github.ref }}
