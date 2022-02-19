@@ -4,12 +4,16 @@ namespace KekUploadCLIClient
 {
     class Program
     {
+        public static String version = "1.0.0";
+
 
         public static void Main(string[] args) {
             Console.WriteLine(MainLoop(args));
         }
 
         public static string MainLoop(string[] args) {
+            if(args.Length == 0) return GetHelp();
+
             switch(args[0].ToLower()) {
                 case "upload":
                     if(args.Length < 3) return GetHelp();
@@ -145,7 +149,7 @@ namespace KekUploadCLIClient
 
         public static string GetHelp() {
             return @"
-KekUploadCLIClient made by CraftingDragon007 and KekOnTheWorld.
+KekUploadCLIClient v" + version + @" made by CraftingDragon007 and KekOnTheWorld.
 
 kup help
     Shows this list
