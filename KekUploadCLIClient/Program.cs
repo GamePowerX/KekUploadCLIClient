@@ -29,16 +29,19 @@ namespace KekUploadCLIClient
                             var size = ConvertBytesToMegabytes(fileInfo.Length);
                             Console.WriteLine("File Size: " + size + " MiB");
                             var chunkSize = 1048576 * 2;
-                            var chunkCount = (int)Math.Ceiling(size / 2);
+                            var chunkCount = (int)Math.Ceiling(fileInfo.Length / (double)chunkSize);
+                            Console.WriteLine("Total Chunk Count: " + chunkCount);
                             var stream = File.OpenRead(file);
                             for (int i = 0; i < chunkCount; i++)
                             {
                                 byte[] chunk = new byte[chunkSize];
+                                Console.WriteLine("Offset: " + i * chunkSize);
+                                Console.WriteLine("Stream Lenght: " + stream.Length);
                                 var offset = i * chunkSize;
                                 int index = 0;
-                                while (index < chunk.Length)
+                                while (index < chunkSize)
                                 {
-                                    int bytesRead = stream.Read(chunk, offset + index, chunk.Length - index);
+                                    int bytesRead = stream.Read(chunk, offset + index, 1);
                                     if (bytesRead == 0)
                                     {
                                       break;

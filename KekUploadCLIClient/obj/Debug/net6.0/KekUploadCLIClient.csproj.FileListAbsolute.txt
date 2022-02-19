@@ -1,0 +1,15 @@
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/bin/Debug/net6.0/KekUploadCLIClient
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/bin/Debug/net6.0/KekUploadCLIClient.deps.json
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/bin/Debug/net6.0/KekUploadCLIClient.runtimeconfig.json
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/bin/Debug/net6.0/KekUploadCLIClient.dll
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/bin/Debug/net6.0/ref/KekUploadCLIClient.dll
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/bin/Debug/net6.0/KekUploadCLIClient.pdb
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/obj/Debug/net6.0/KekUploadCLIClient.csproj.AssemblyReference.cache
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/obj/Debug/net6.0/KekUploadCLIClient.GeneratedMSBuildEditorConfig.editorconfig
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/obj/Debug/net6.0/KekUploadCLIClient.AssemblyInfoInputs.cache
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/obj/Debug/net6.0/KekUploadCLIClient.AssemblyInfo.cs
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/obj/Debug/net6.0/KekUploadCLIClient.csproj.CoreCompileInputs.cache
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/obj/Debug/net6.0/KekUploadCLIClient.dll
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/obj/Debug/net6.0/ref/KekUploadCLIClient.dll
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/obj/Debug/net6.0/KekUploadCLIClient.pdb
+/home/craftingdragon7/RiderProjects/KekUploadCLIClient/KekUploadCLIClient/obj/Debug/net6.0/KekUploadCLIClient.genruntimeconfig.cache
