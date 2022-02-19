@@ -67,7 +67,7 @@ jobs:
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: KekUploadCLIClient/bin/Release/net6.0/win-x64/publish/KekUploadCLIClient.exe
-        asset_name: KekUploadCLIClient-windows-amd64
+        asset_name: KekUploadCLIClient-windows-amd64.exe
         tag: ${{ github.ref }}
         
   buildMacOs:
