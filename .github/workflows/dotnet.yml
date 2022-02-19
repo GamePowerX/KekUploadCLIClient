@@ -83,7 +83,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore -c release
+      run: dotnet publish -c release -r osx-x64 -p:PublishSingleFile=true --self-contained false
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.3.1
       with:
