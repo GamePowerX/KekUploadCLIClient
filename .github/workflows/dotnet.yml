@@ -2,12 +2,12 @@ name: .NET CI
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
-
+    # Pattern matched against refs/tags
+    tags:        
+      - '*'           # Push events to every tag not containing /
+      
 jobs:
-  build:
+  buildLinux:
 
     runs-on: ubuntu-latest
 
@@ -20,4 +20,83 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore --release
+      run: dotnet publish -c release -r linux-x64 -p:PublishSingleFile=true --self-contained false
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.3.1
+      with:
+        # Artifact name
+        name: KekUploadCLIClient_Linux # optional, default is artifact
+        # A file, directory or wildcard pattern that describes what to upload
+        path: KekUploadCLIClient/bin/Release/net6.0/linux-x64/publish/KekUploadCLIClient
+        # The desired behavior if no files are found using the provided path.
+        
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: KekUploadCLIClient/bin/Release/net6.0/linux-x64/publish/KekUploadCLIClient
+        asset_name: KekUploadCLIClient-linux-amd64
+        tag: ${{ github.ref }}
+        
+        
+  buildWindows:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet publish -c release -r win-x64 -p:PublishSingleFile=true --self-contained false
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.3.1
+      with:
+        # Artifact name
+        name: KekUploadCLIClient_Windows # optional, default is artifact
+        # A file, directory or wildcard pattern that describes what to upload
+        path: KekUploadCLIClient/bin/release/net6.0/win-x64/publish/KekUploadCLIClient.exe
+        # The desired behavior if no files are found using the provided path.
+        
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: KekUploadCLIClient/bin/Release/net6.0/win-x64/publish/KekUploadCLIClient.exe
+        asset_name: KekUploadCLIClient-windows-amd64.exe
+        tag: ${{ github.ref }}
+        
+  buildMacOs:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet publish -c release -r osx-x64 -p:PublishSingleFile=true --self-contained false
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.3.1
+      with:
+        # Artifact name
+        name: KekUploadCLIClient_MacOs # optional, default is artifact
+        # A file, directory or wildcard pattern that describes what to upload
+        path: KekUploadCLIClient/bin/Release/net6.0/osx-x64/publish/KekUploadCLIClient
+        # The desired behavior if no files are found using the provided path.
+        
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: KekUploadCLIClient/bin/Release/net6.0/osx-x64/publish/KekUploadCLIClient
+        asset_name: KekUploadCLIClient-macos-amd64
+        tag: ${{ github.ref }}
