@@ -3,8 +3,7 @@ name: .NET CI
 on:
   push:
     # Pattern matched against refs/tags
-    tags:        
-      - '*'           # Push events to every tag not containing /
+    branches: master
       
 jobs:
   buildLinux:
@@ -29,15 +28,18 @@ jobs:
         # A file, directory or wildcard pattern that describes what to upload
         path: KekUploadCLIClient/bin/Release/net6.0/linux-x64/publish/KekUploadCLIClient
         # The desired behavior if no files are found using the provided path.
-        
+    - name: Set outputs
+      id: vars
+      run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+    - name: Check outputs
+      run: echo ${{ steps.vars.outputs.sha_short }}
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: KekUploadCLIClient/bin/Release/net6.0/linux-x64/publish/KekUploadCLIClient
         asset_name: KekUploadCLIClient-linux-amd64
-        tag: ${{ github.ref }}
-        
+        tag: ${{ steps.vars.outputs.sha_short }}
         
   buildWindows:
 
@@ -61,14 +63,19 @@ jobs:
         # A file, directory or wildcard pattern that describes what to upload
         path: KekUploadCLIClient/bin/release/net6.0/win-x64/publish/KekUploadCLIClient.exe
         # The desired behavior if no files are found using the provided path.
-        
+    - name: Set outputs
+      id: vars
+      run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+    - name: Check outputs
+      run: echo ${{ steps.vars.outputs.sha_short }}
+      
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: KekUploadCLIClient/bin/Release/net6.0/win-x64/publish/KekUploadCLIClient.exe
         asset_name: KekUploadCLIClient-windows-amd64.exe
-        tag: ${{ github.ref }}
+        tag: ${{ steps.vars.outputs.sha_short }}
         
   buildMacOs:
 
@@ -83,7 +90,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet publish -c release -r osx-x64 -p:PublishSingleFile=true --self-contained false
+      run: dotnet publish -c release -r osx-x64 -p:PublishSingleFile=true --self-contained false      
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.3.1
       with:
@@ -93,10 +100,16 @@ jobs:
         path: KekUploadCLIClient/bin/Release/net6.0/osx-x64/publish/KekUploadCLIClient
         # The desired behavior if no files are found using the provided path.
         
+    - name: Set outputs
+      id: vars
+      run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+    - name: Check outputs
+      run: echo ${{ steps.vars.outputs.sha_short }}
+      
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: KekUploadCLIClient/bin/Release/net6.0/osx-x64/publish/KekUploadCLIClient
         asset_name: KekUploadCLIClient-macos-amd64
-        tag: ${{ github.ref }}
+        tag: ${{ steps.vars.outputs.sha_short }}
