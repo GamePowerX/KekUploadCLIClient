@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 
@@ -39,21 +40,28 @@ namespace KekUploadCLIClient
             }
         }
 
-        public static string Download(string url, string output) {
-            var client = new HttpClient();
+        public static string Download(string url, string output)
+        {
+            Console.WriteLine("Starting with the download!");
+            Console.WriteLine();
+            ProgressBar progressBar = new ProgressBar();
+            
 
             var downloadUrl = url.Replace("/e/", "/d/");
             
-            var downloadRequest = new HttpRequestMessage {
-                RequestUri = new Uri(downloadUrl),
-                Method = HttpMethod.Get
+            var client = new HttpClientDownloadWithProgress(downloadUrl, output);
+            client.ProgressChanged += (size, downloaded, percentage) =>
+            {
+                if (size != null)
+                {
+                    Console.WriteLine("Downloaded " + SizeToString(downloaded) + " of " + SizeToString((long)size) + "!");
+                }else Console.WriteLine("Downloaded " + SizeToString(downloaded) + "!");
+                progressBar.SetProgress((float)(percentage != null ? percentage : 0));
             };
-
-            var fileStream = File.OpenWrite(output);
-            var response = client.Send(downloadRequest);
-
-            if (response.IsSuccessStatusCode) {
-                response.Content.ReadAsStream().CopyTo(fileStream);
+            Task task = client.StartDownload();
+            task.Wait();
+            progressBar.Dispose();
+            if (task.IsCompletedSuccessfully) {
                 return "Successfully downloaded file to: " + Path.GetFullPath(output);
             } else return "Could not download the file! Are you sure you entered a correct url?";
         }
@@ -86,7 +94,10 @@ namespace KekUploadCLIClient
             var chunks = (int)Math.Ceiling(fileSize/(double)maxChunkSize);
 
             Console.WriteLine("Chunks: " + chunks);
+            Console.WriteLine();
 
+            ProgressBar progressBar = new ProgressBar();
+            
             for(int chunk = 0; chunk < chunks; chunk++) {
                 var chunkSize = Math.Min(stream.Length-chunk*maxChunkSize, maxChunkSize);
 
@@ -107,9 +118,12 @@ namespace KekUploadCLIClient
 
                 var responseMsg = client.Send(uploadRequest);
                 if (!responseMsg.IsSuccessStatusCode) return "Some error i dont want to show u lol.";
+                progressBar.SetProgress((chunk+1) * 100 / (float)chunks);
+                //DrawTextProgressBar(chunk + 1, chunks);
             }
-
-
+            
+            progressBar.Dispose();
+            
             var hash = HashFile(file);
 
             Console.WriteLine("File Hash: " + hash);
@@ -141,13 +155,13 @@ namespace KekUploadCLIClient
 
         private static string SizeToString(long size) {
             if(size >= 1099511627776) {
-                return Math.Round(size / 10995116277.76)*0.01 + " TiB";
+                return decimal.Round((decimal)(Math.Round(size / 10995116277.76)*0.01), 2) + " TiB";
             } else if(size >= 1073741824) {
-                return Math.Round(size / 10737418.24)*0.01 + " GiB";
+                return decimal.Round((decimal)(Math.Round(size / 10737418.24)*0.01), 2) + " GiB";
             } else if(size >= 1048576) {
-                return Math.Round(size / 10485.76)*0.01 + " MiB";
+                return decimal.Round((decimal)(Math.Round(size / 10485.76)*0.01), 2) + " MiB";
             } else if(size >= 1024) {
-                return Math.Round(size / 10.24)*0.01 + " KiB";
+                return decimal.Round((decimal)(Math.Round(size / 10.24)*0.01), 2) + " KiB";
             } else return size + " bytes";
         }
 
