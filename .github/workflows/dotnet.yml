@@ -11,6 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Set outputs
+      id: vars
+      run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+    - name: Check outputs
+      run: echo ${{ steps.vars.outputs.sha_short }}
     - uses: actions/checkout@v2
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
@@ -35,13 +40,18 @@ jobs:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: KekUploadCLIClient/bin/Release/net6.0/linux-x64/publish/KekUploadCLIClient
         asset_name: KekUploadCLIClient-linux-amd64
-        tag: ${{ github.sha }}
+        tag: ${{ steps.vars.outputs.sha_short }}
         
   buildWindows:
 
     runs-on: windows-latest
 
     steps:
+    - name: Set outputs
+      id: vars
+      run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+    - name: Check outputs
+      run: echo ${{ steps.vars.outputs.sha_short }}
     - uses: actions/checkout@v2
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
@@ -66,13 +76,18 @@ jobs:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: KekUploadCLIClient/bin/Release/net6.0/win-x64/publish/KekUploadCLIClient.exe
         asset_name: KekUploadCLIClient-windows-amd64.exe
-        tag: ${{ github.sha }}
+        tag: ${{ steps.vars.outputs.sha_short }}
         
   buildMacOs:
 
     runs-on: macos-latest
 
     steps:
+    - name: Set outputs
+      id: vars
+      run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+    - name: Check outputs
+      run: echo ${{ steps.vars.outputs.sha_short }}
     - uses: actions/checkout@v2
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
@@ -97,4 +112,4 @@ jobs:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: KekUploadCLIClient/bin/Release/net6.0/osx-x64/publish/KekUploadCLIClient
         asset_name: KekUploadCLIClient-macos-amd64
-        tag: ${{ github.sha }}
+        tag: ${{ steps.vars.outputs.sha_short }}
