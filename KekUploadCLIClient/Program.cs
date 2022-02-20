@@ -29,7 +29,7 @@ namespace KekUploadCLIClient
                 case "download":
                     if(args.Length < 3) return GetHelp();
 
-                    return Download(args[0], args[1]);
+                    return Download(args[1], args[2]);
 
                 case "help": 
                     return GetHelp();
