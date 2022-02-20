@@ -3,8 +3,7 @@ name: .NET CI
 on:
   push:
     # Pattern matched against refs/tags
-    tags:        
-      - '*'           # Push events to every tag not containing /
+    branches: master
       
 jobs:
   buildLinux:
