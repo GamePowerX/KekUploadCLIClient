@@ -78,7 +78,7 @@ jobs:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: KekUploadCLIClient/bin/Release/net6.0/win-x64/publish/KekUploadCLIClient.exe
         asset_name: KekUploadCLIClient-windows-amd64.exe
-        tag: "build_${{ env.BUILD_NUMBER }}"
+        tag: "build_${{ needs.buildLinux.outputs.build_number }}"
         release_name: ${{ steps.vars.outputs.sha_short }}
         prerelease: true
         
@@ -118,6 +118,6 @@ jobs:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: KekUploadCLIClient/bin/Release/net6.0/osx-x64/publish/KekUploadCLIClient
         asset_name: KekUploadCLIClient-macos-amd64
-        tag: "build_${{ env.BUILD_NUMBER }}"
+        tag: "build_${{ needs.buildLinux.outputs.build_number }}"
         release_name: ${{ steps.vars.outputs.sha_short }}
         prerelease: true
