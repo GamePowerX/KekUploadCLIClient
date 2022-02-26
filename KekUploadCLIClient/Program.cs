@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
+using ManyConsole;
 
 namespace KekUploadCLIClient
 {
@@ -12,172 +13,16 @@ namespace KekUploadCLIClient
         public static string version = "1.0.0";
 
 
-        public static void Main(string[] args) {
-            Console.WriteLine(MainLoop(args));
-        }
-
-        public static string MainLoop(string[] args) {
-            if(args.Length == 0) return GetHelp();
-
-            switch(args[0].ToLower()) {
-                case "upload":
-                    if(args.Length < 3) return GetHelp();
-
-                    var file = Path.GetFullPath(args[1]);
-                    if(!File.Exists(file)) return "File doesn't exist.";
-                    return Upload(file, args[2]);
-
-                case "download":
-                    if(args.Length < 3) return GetHelp();
-
-                    return Download(args[1], args[2]);
-
-                case "help": 
-                    return GetHelp();
-
-                default:
-                    return "Subcommand '" + args[0]  + "' not found! Use 'kup help' to get a list of possible options.";
-            }
-        }
-
-        public static string Download(string url, string output)
+        public static int Main(string[] args)
         {
-            Console.WriteLine("Starting with the download!");
-            Console.WriteLine();
-            ProgressBar progressBar = new ProgressBar();
-            
-
-            var downloadUrl = url.Replace("/e/", "/d/");
-            
-            var client = new HttpClientDownloadWithProgress(downloadUrl, output);
-            client.ProgressChanged += (size, downloaded, percentage) =>
-            {
-                if (size != null)
-                {
-                    Console.WriteLine("Downloaded " + SizeToString(downloaded) + " of " + SizeToString((long)size) + "!");
-                }else Console.WriteLine("Downloaded " + SizeToString(downloaded) + "!");
-                progressBar.SetProgress((float)(percentage != null ? percentage : 0));
-            };
-            Task task = client.StartDownload();
-            task.Wait();
-            progressBar.Dispose();
-            if (task.IsCompletedSuccessfully) {
-                return "Successfully downloaded file to: " + Path.GetFullPath(output);
-            } else return "Could not download the file! Are you sure you entered a correct url?";
+            Console.WriteLine("KekUploadCLIClient v" + version + " made by CraftingDragon007 and KekOnTheWorld.");
+            var commands = GetCommands();
+            return ConsoleCommandDispatcher.DispatchCommand(commands, args, Console.Out);
         }
-
-        public static string Upload(string file, string baseapi) {
-            var fileInfo = new FileInfo(file);
-            var client = new HttpClient();
-
-            var request = new HttpRequestMessage() {
-                RequestUri = new Uri(baseapi + "/c/" + fileInfo.Extension.Substring(1)),
-                Method = HttpMethod.Post
-            };
-
-            var responseMessage = client.Send(request);
-
-            if(!responseMessage.IsSuccessStatusCode) return "Could not create uploadstream!";
-
-            var uploadStreamId = new StreamReader(responseMessage.Content.ReadAsStream()).ReadToEnd();
-
-            Console.WriteLine("Upload Stream ID: " + uploadStreamId);
-            
-            var size = SizeToString(fileInfo.Length);
-            
-            Console.WriteLine("File Size: " + size);
-            
-            var stream = File.OpenRead(file);
-
-            var fileSize = fileInfo.Length;
-            const int maxChunkSize = 1024*1024*2;
-            var chunks = (int)Math.Ceiling(fileSize/(double)maxChunkSize);
-
-            Console.WriteLine("Chunks: " + chunks);
-            Console.WriteLine();
-
-            ProgressBar progressBar = new ProgressBar();
-            
-            for(int chunk = 0; chunk < chunks; chunk++) {
-                var chunkSize = Math.Min(stream.Length-chunk*maxChunkSize, maxChunkSize);
-
-                byte[] buf = new byte[chunkSize];
-
-                int readBytes = 0;
-                while(readBytes < chunkSize) readBytes += stream.Read(buf, readBytes, (int)Math.Min(stream.Length-(readBytes+chunk*chunkSize), chunkSize));
-
-                var hashs = HashChunk(buf);
-                Console.WriteLine("Chunk Hash: " + hashs);
-
-                // index is the number of bytes in the chunk
-                var uploadRequest = new HttpRequestMessage {
-                    RequestUri = new Uri(baseapi + "/u/" + uploadStreamId + "/" + hashs),
-                    Method = HttpMethod.Post,
-                    Content = new ByteArrayContent(buf)
-                };
-
-                var responseMsg = client.Send(uploadRequest);
-                if (!responseMsg.IsSuccessStatusCode) return "Some error i dont want to show u lol.";
-                progressBar.SetProgress((chunk+1) * 100 / (float)chunks);
-                //DrawTextProgressBar(chunk + 1, chunks);
-            }
-            
-            progressBar.Dispose();
-            
-            var hash = HashFile(file);
-
-            Console.WriteLine("File Hash: " + hash);
-
-            var finishRequest = new HttpRequestMessage {   
-                RequestUri = new Uri(baseapi + "/f/" + uploadStreamId + "/" + hash),
-                Method = HttpMethod.Post
-            };
-
-            var finishResponse = client.Send(finishRequest);
-            if (!finishResponse.IsSuccessStatusCode) return "SHIT WHAT THE FUCK HAPPENED?";
-
-            var downloadId = finishResponse.Content.ReadAsStringAsync().Result; 
-            
-            return "Finished the upload! Download Url: " + baseapi + "/e/" + downloadId;
-        }
-
-
-        private static string HashChunk(byte[] chunk) {
-            var hash = SHA1.Create().ComputeHash(chunk);
-            return string.Concat(hash.Select(b => b.ToString("x2")));
-        }
-
-        private static string HashFile(string file) {
-            var stream = File.OpenRead(file);
-            var hash = SHA1.Create().ComputeHash(stream);
-            return string.Concat(hash.Select(b => b.ToString("x2")));
-        }
-
-        private static string SizeToString(long size) {
-            if(size >= 1099511627776) {
-                return decimal.Round((decimal)(Math.Round(size / 10995116277.76)*0.01), 2) + " TiB";
-            } else if(size >= 1073741824) {
-                return decimal.Round((decimal)(Math.Round(size / 10737418.24)*0.01), 2) + " GiB";
-            } else if(size >= 1048576) {
-                return decimal.Round((decimal)(Math.Round(size / 10485.76)*0.01), 2) + " MiB";
-            } else if(size >= 1024) {
-                return decimal.Round((decimal)(Math.Round(size / 10.24)*0.01), 2) + " KiB";
-            } else return size + " bytes";
-        }
-
-        public static string GetHelp() {
-            return @"
-KekUploadCLIClient v" + version + @" made by CraftingDragon007 and KekOnTheWorld.
-
-kup help
-    Shows this list
-
-kup upload <file> <base api url>
-    Uploads a file
-
-kup download <url> <destination>
-    Downloads a file
-            ";
+        
+        public static IEnumerable<ConsoleCommand> GetCommands()
+        {
+            return ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(Program));
         }
     }
 }
