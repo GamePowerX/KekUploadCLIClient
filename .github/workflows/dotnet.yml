@@ -7,8 +7,10 @@ on:
       
 jobs:
   buildLinux:
-
     runs-on: ubuntu-latest
+    
+    outputs:
+      build_number: ${{ steps.buildnumber.outputs.build_number }}
 
     steps:
     - uses: actions/checkout@v2
@@ -33,15 +35,24 @@ jobs:
       run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
     - name: Check outputs
       run: echo ${{ steps.vars.outputs.sha_short }}
+    - name: Generate build number
+      id: buildnumber
+      uses: einaregilsson/build-number@v3 
+      with:
+        token: ${{secrets.github_token}}
+          
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: KekUploadCLIClient/bin/Release/net6.0/linux-x64/publish/KekUploadCLIClient
         asset_name: KekUploadCLIClient-linux-amd64
-        tag: ${{ steps.vars.outputs.sha_short }}
+        tag: "build_${{ env.BUILD_NUMBER }}"
+        release_name: ${{ steps.vars.outputs.sha_short }}
+        prerelease: true
         
   buildWindows:
+    needs: buildLinux
 
     runs-on: windows-latest
 
@@ -68,16 +79,19 @@ jobs:
       run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
     - name: Check outputs
       run: echo ${{ steps.vars.outputs.sha_short }}
-      
+    
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: KekUploadCLIClient/bin/Release/net6.0/win-x64/publish/KekUploadCLIClient.exe
         asset_name: KekUploadCLIClient-windows-amd64.exe
-        tag: ${{ steps.vars.outputs.sha_short }}
+        tag: "build_${{ needs.buildLinux.outputs.build_number }}"
+        release_name: ${{ steps.vars.outputs.sha_short }}
+        prerelease: true
         
   buildMacOs:
+    needs: buildLinux
 
     runs-on: macos-latest
 
@@ -112,4 +126,6 @@ jobs:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: KekUploadCLIClient/bin/Release/net6.0/osx-x64/publish/KekUploadCLIClient
         asset_name: KekUploadCLIClient-macos-amd64
-        tag: ${{ steps.vars.outputs.sha_short }}
+        tag: "build_${{ needs.buildLinux.outputs.build_number }}"
+        release_name: ${{ steps.vars.outputs.sha_short }}
+        prerelease: true
