@@ -16,12 +16,13 @@ public class DownloadCommand : ConsoleCommand
         HasLongDescription("Can be used to download a File from a Server running KotwOSS/UploadServer");
         HasRequiredOption("u|url=", "The base Download Url from the file", p => DownloadUrl = p);
         HasRequiredOption("f|file=", "The path to save the file to", p => FileLocation = p);
+        HasOption("s|silent=", "If the command should be executed silently", t =>{});
     }
 
     public override int Run(string[] remainingArguments)
     {
-        Console.WriteLine("Starting with the download!");
-        Console.WriteLine();
+        Program.WriteLine("Starting with the download!");
+        Program.WriteLine("");
         ProgressBar progressBar = new ProgressBar();
             
 
@@ -32,8 +33,8 @@ public class DownloadCommand : ConsoleCommand
         {
             if (size != null)
             {
-                Console.WriteLine("Downloaded " + SizeToString(downloaded) + " of " + SizeToString((long)size) + "!");
-            }else Console.WriteLine("Downloaded " + SizeToString(downloaded) + "!");
+                Program.WriteLine("Downloaded " + SizeToString(downloaded) + " of " + SizeToString((long)size) + "!");
+            }else Program.WriteLine("Downloaded " + SizeToString(downloaded) + "!");
             progressBar.SetProgress((float)(percentage != null ? percentage : 0));
         };
         Task task = client.StartDownload();
@@ -41,12 +42,12 @@ public class DownloadCommand : ConsoleCommand
         progressBar.Dispose();
         if (task.IsCompletedSuccessfully)
         {
-            Console.WriteLine("Successfully downloaded file to: " + Path.GetFullPath(FileLocation));
+            Program.WriteLine("Successfully downloaded file to: " + Path.GetFullPath(FileLocation));
             return Success; 
         }
         else
         {
-            Console.WriteLine("Could not download the file! Are you sure you entered a correct url?");
+            Program.WriteLine("Could not download the file! Are you sure you entered a correct url?");
             return Failure;
         }
     }

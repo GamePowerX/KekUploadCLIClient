@@ -18,7 +18,8 @@ public class UploadCommand : ConsoleCommand
         HasLongDescription("Can be used to upload a File to a Server running KotwOSS/UploadServer");
         HasRequiredOption("f|file=", "The path of the file to upload.", p => FileLocation = p);
         HasRequiredOption("u|url=", "The base Api Url from the upload Server", p => ApiBaseUrl = p);
-        HasOption("s|size=", "The Size of the Chunks for uploading (in KiB)", t => ChunkSize = t == null ? 1024*1024*2 : Convert.ToInt32(t));
+        HasOption("c|chunkSize=", "The Size of the Chunks for uploading (in KiB)", t => ChunkSize = t == null ? 1024*1024*2 : Convert.ToInt32(t));
+        HasOption("s|silent=", "If the command should be executed silently", t =>{});
     }
 
     public override int Run(string[] remainingArguments)
@@ -28,7 +29,7 @@ public class UploadCommand : ConsoleCommand
             var file = Path.GetFullPath(FileLocation);
             if(!File.Exists(file))
             {
-                Console.WriteLine("File doesn't exist.");
+                Program.WriteLine("File doesn't exist.");
                 return Failure;
             }
             var fileInfo = new FileInfo(file);
@@ -43,17 +44,17 @@ public class UploadCommand : ConsoleCommand
 
             if(!responseMessage.IsSuccessStatusCode)
             {
-                Console.WriteLine("Could not create uploadstream!");
+                Program.WriteLine("Could not create uploadstream!");
                 return Failure;
             } 
 
             var uploadStreamId = new StreamReader(responseMessage.Content.ReadAsStream()).ReadToEnd();
 
-            Console.WriteLine("Upload Stream ID: " + uploadStreamId);
+            Program.WriteLine("Upload Stream ID: " + uploadStreamId);
             
             var size = SizeToString(fileInfo.Length);
             
-            Console.WriteLine("File Size: " + size);
+            Program.WriteLine("File Size: " + size);
             
             var stream = File.OpenRead(FileLocation);
 
@@ -62,8 +63,8 @@ public class UploadCommand : ConsoleCommand
             int maxChunkSize = 1024 * ChunkSize;
             var chunks = (int)Math.Ceiling(fileSize/(double)maxChunkSize);
 
-            Console.WriteLine("Chunks: " + chunks);
-            Console.WriteLine();
+            Program.WriteLine("Chunks: " + chunks);
+            Program.WriteLine("");
 
             ProgressBar progressBar = new ProgressBar();
             
@@ -76,7 +77,7 @@ public class UploadCommand : ConsoleCommand
                 while(readBytes < chunkSize) readBytes += stream.Read(buf, readBytes, (int)Math.Min(stream.Length-(readBytes+chunk*chunkSize), chunkSize));
 
                 var hashs = HashChunk(buf);
-                Console.WriteLine("Chunk Hash: " + hashs);
+                Program.WriteLine("Chunk Hash: " + hashs);
 
                 // index is the number of bytes in the chunk
                 var uploadRequest = new HttpRequestMessage {
@@ -88,7 +89,7 @@ public class UploadCommand : ConsoleCommand
                 var responseMsg = client.Send(uploadRequest);
                 if (!responseMsg.IsSuccessStatusCode)
                 {
-                    Console.WriteLine("Some error i dont want to show u lol.");
+                    Program.WriteLine("Some error i dont want to show u lol.");
                     return Failure;
                 }
                 progressBar.SetProgress((chunk+1) * 100 / (float)chunks);
@@ -99,7 +100,7 @@ public class UploadCommand : ConsoleCommand
             
             var hash = HashFile(file);
 
-            Console.WriteLine("File Hash: " + hash);
+            Program.WriteLine("File Hash: " + hash);
 
             var finishRequest = new HttpRequestMessage {   
                 RequestUri = new Uri(ApiBaseUrl + "/f/" + uploadStreamId + "/" + hash),
@@ -109,13 +110,13 @@ public class UploadCommand : ConsoleCommand
             var finishResponse = client.Send(finishRequest);
             if (!finishResponse.IsSuccessStatusCode)
             {
-                Console.WriteLine("SHIT WHAT THE FUCK HAPPENED?");
+                Program.WriteLine("SHIT WHAT THE FUCK HAPPENED?");
                 return Failure;
             }
 
             var downloadId = finishResponse.Content.ReadAsStringAsync().Result;
             
-            Console.WriteLine("Finished the upload! Download Url: " + ApiBaseUrl + "/e/" + downloadId);
+            Program.WriteLine("Finished the upload! Download Url: " + ApiBaseUrl + "/e/" + downloadId);
             return Success;
         }
         catch (Exception ex)

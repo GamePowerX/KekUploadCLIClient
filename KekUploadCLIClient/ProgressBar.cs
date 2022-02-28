@@ -15,19 +15,28 @@ namespace KekUploadCLIClient
         private ProgressWriter writer;
     
         public ProgressBar() {
-            OriginalWriter = Console.Out;
-            writer = new ProgressWriter(OriginalWriter);
-            Console.SetOut(writer);
+            if (!Program.Silent)
+            {
+                OriginalWriter = Console.Out;
+                writer = new ProgressWriter(OriginalWriter);
+                Console.SetOut(writer);
+            }
         }
     
         public void Dispose() {
-            Console.SetOut(OriginalWriter);
-            writer.ClearProgressBar();
+            if (!Program.Silent)
+            {
+                Console.SetOut(OriginalWriter);
+                writer.ClearProgressBar();
+            }
         }
     
         public void SetProgress(float f) {
-            writer.CurrentProgress = f;
-            writer.RedrawProgress();
+            if (!Program.Silent)
+            {
+                writer.CurrentProgress = f;
+                writer.RedrawProgress();
+            }
         }
         public void SetProgress(int i) {
             SetProgress((float)i);
