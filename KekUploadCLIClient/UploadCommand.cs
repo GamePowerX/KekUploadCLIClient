@@ -59,7 +59,7 @@ public class UploadCommand : ConsoleCommand
             var stream = File.OpenRead(FileLocation);
 
             var fileSize = fileInfo.Length;
-            ChunkSize = ChunkSize == 0 ? 1024 * 2 : ChunkSize;
+            ChunkSize = ChunkSize <= 0 ? 1024 * 2 : ChunkSize;
             int maxChunkSize = 1024 * ChunkSize;
             var chunks = (int)Math.Ceiling(fileSize/(double)maxChunkSize);
 
