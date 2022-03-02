@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using KekUploadLibrary;
 using ManyConsole;
 
 namespace KekUploadCLIClient;
@@ -24,130 +25,48 @@ public class UploadCommand : ConsoleCommand
 
     public override int Run(string[] remainingArguments)
     {
-        try
+        var file = Path.GetFullPath(FileLocation);
+        if(!File.Exists(file))
         {
-            var file = Path.GetFullPath(FileLocation);
-            if(!File.Exists(file))
-            {
-                Program.WriteLine("File doesn't exist.");
-                return Failure;
-            }
-            var fileInfo = new FileInfo(file);
-            var client = new HttpClient();
-
-            var request = new HttpRequestMessage() {
-                RequestUri = new Uri(ApiBaseUrl + "/c/" + fileInfo.Extension.Substring(1)),
-                Method = HttpMethod.Post
-            };
-
-            var responseMessage = client.Send(request);
-
-            if(!responseMessage.IsSuccessStatusCode)
-            {
-                Program.WriteLine("Could not create uploadstream!");
-                return Failure;
-            } 
-
-            var uploadStreamId = new StreamReader(responseMessage.Content.ReadAsStream()).ReadToEnd();
-
-            Program.WriteLine("Upload Stream ID: " + uploadStreamId);
-            
-            var size = SizeToString(fileInfo.Length);
-            
-            Program.WriteLine("File Size: " + size);
-            
-            var stream = File.OpenRead(FileLocation);
-
-            var fileSize = fileInfo.Length;
-            ChunkSize = ChunkSize <= 0 ? 1024 * 2 : ChunkSize;
-            int maxChunkSize = 1024 * ChunkSize;
-            var chunks = (int)Math.Ceiling(fileSize/(double)maxChunkSize);
-
-            Program.WriteLine("Chunks: " + chunks);
-            Program.WriteLine("");
-
-            ProgressBar progressBar = new ProgressBar();
-            
-            for(int chunk = 0; chunk < chunks; chunk++) {
-                var chunkSize = Math.Min(stream.Length-chunk*maxChunkSize, maxChunkSize);
-
-                byte[] buf = new byte[chunkSize];
-
-                int readBytes = 0;
-                while(readBytes < chunkSize) readBytes += stream.Read(buf, readBytes, (int)Math.Min(stream.Length-(readBytes+chunk*chunkSize), chunkSize));
-
-                var hashs = HashChunk(buf);
-                Program.WriteLine("Chunk Hash: " + hashs);
-
-                // index is the number of bytes in the chunk
-                var uploadRequest = new HttpRequestMessage {
-                    RequestUri = new Uri(ApiBaseUrl + "/u/" + uploadStreamId + "/" + hashs),
-                    Method = HttpMethod.Post,
-                    Content = new ByteArrayContent(buf)
-                };
-
-                var responseMsg = client.Send(uploadRequest);
-                if (!responseMsg.IsSuccessStatusCode)
-                {
-                    Program.WriteLine("Some error i dont want to show u lol.");
-                    return Failure;
-                }
-                progressBar.SetProgress((chunk+1) * 100 / (float)chunks);
-                //DrawTextProgressBar(chunk + 1, chunks);
-            }
-            
-            progressBar.Dispose();
-            
-            var hash = HashFile(file);
-
-            Program.WriteLine("File Hash: " + hash);
-
-            var finishRequest = new HttpRequestMessage {   
-                RequestUri = new Uri(ApiBaseUrl + "/f/" + uploadStreamId + "/" + hash),
-                Method = HttpMethod.Post
-            };
-
-            var finishResponse = client.Send(finishRequest);
-            if (!finishResponse.IsSuccessStatusCode)
-            {
-                Program.WriteLine("SHIT WHAT THE FUCK HAPPENED?");
-                return Failure;
-            }
-
-            var downloadId = finishResponse.Content.ReadAsStringAsync().Result;
-            
-            Program.WriteLine("Finished the upload! Download Url: " + ApiBaseUrl + "/e/" + downloadId);
-            return Success;
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine(ex.Message);
-            Console.Error.WriteLine(ex.StackTrace);
-
+            Program.WriteLine("File doesn't exist.");
             return Failure;
         }
-    }
-    
-    private static string HashChunk(byte[] chunk) {
-        var hash = SHA1.Create().ComputeHash(chunk);
-        return string.Concat(hash.Select(b => b.ToString("x2")));
-    }
-
-    private static string HashFile(string file) {
-        var stream = File.OpenRead(file);
-        var hash = SHA1.Create().ComputeHash(stream);
-        return string.Concat(hash.Select(b => b.ToString("x2")));
-    }
-
-    private static string SizeToString(long size) {
-        if(size >= 1099511627776) {
-            return decimal.Round((decimal)(Math.Round(size / 10995116277.76)*0.01), 2) + " TiB";
-        } else if(size >= 1073741824) {
-            return decimal.Round((decimal)(Math.Round(size / 10737418.24)*0.01), 2) + " GiB";
-        } else if(size >= 1048576) {
-            return decimal.Round((decimal)(Math.Round(size / 10485.76)*0.01), 2) + " MiB";
-        } else if(size >= 1024) {
-            return decimal.Round((decimal)(Math.Round(size / 10.24)*0.01), 2) + " KiB";
-        } else return size + " bytes";
+        var fileInfo = new FileInfo(file);
+        ChunkSize = ChunkSize <= 0 ? 1024 * 2 : ChunkSize;
+        var client = new UploadClient(ApiBaseUrl, ChunkSize);
+        ProgressBar progressBar = null;
+        client.UploadStreamCreateEvent += (sender, args) =>
+        {
+            Program.WriteLine("Upload Stream ID: " + args.UploadStreamId);
+            var size = Utils.SizeToString(fileInfo.Length);
+            Program.WriteLine("File Size: " + size);
+            Program.WriteLine("");
+            progressBar = new ProgressBar();
+        };
+        var announcedChunks = false;
+        client.UploadChunkCompleteEvent += (sender, args) =>
+        {
+            if (!announcedChunks)
+            {
+                announcedChunks = true;
+                Program.WriteLine("Chunks: " + args.TotalChunkCount);
+            }
+            progressBar.SetProgress((args.CurrentChunkCount+1) * 100 / (float)args.TotalChunkCount);
+            Program.WriteLine("Chunk Hash: " + args.ChunkHash);
+        };
+        
+        try
+        {
+           var url = client.UploadFile(file);
+           Program.WriteLine("");
+           Program.WriteLine("Finished the upload! Download Url: " + url);
+           if(Program.Silent) Console.WriteLine(url);
+           return Success;
+        }
+        catch (KekException e)
+        {
+            Program.WriteLine("An error occured during upload: " + e.Message);
+            return Failure;
+        }
     }
 }

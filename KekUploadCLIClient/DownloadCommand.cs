@@ -1,3 +1,4 @@
+using KekUploadLibrary;
 using ManyConsole;
 
 namespace KekUploadCLIClient;
@@ -24,43 +25,26 @@ public class DownloadCommand : ConsoleCommand
         Program.WriteLine("Starting with the download!");
         Program.WriteLine("");
         ProgressBar progressBar = new ProgressBar();
-            
 
-        var downloadUrl = DownloadUrl.Replace("/e/", "/d/");
-            
-        var client = new HttpClientDownloadWithProgress(downloadUrl, FileLocation);
-        client.ProgressChanged += (size, downloaded, percentage) =>
+        var client = new DownloadClient();
+        client.ProgressChangedEvent += (size, downloaded, percentage) =>
         {
             if (size != null)
             {
-                Program.WriteLine("Downloaded " + SizeToString(downloaded) + " of " + SizeToString((long)size) + "!");
-            }else Program.WriteLine("Downloaded " + SizeToString(downloaded) + "!");
+                Program.WriteLine("Downloaded " + Utils.SizeToString(downloaded) + " of " + Utils.SizeToString((long)size) + "!");
+            }else Program.WriteLine("Downloaded " + Utils.SizeToString(downloaded) + "!");
             progressBar.SetProgress((float)(percentage != null ? percentage : 0));
         };
-        Task task = client.StartDownload();
-        task.Wait();
-        progressBar.Dispose();
-        if (task.IsCompletedSuccessfully)
+        try
         {
+            client.DownloadFile(DownloadUrl, FileLocation);
             Program.WriteLine("Successfully downloaded file to: " + Path.GetFullPath(FileLocation));
             return Success; 
         }
-        else
+        catch (KekException e)
         {
             Program.WriteLine("Could not download the file! Are you sure you entered a correct url?");
             return Failure;
         }
-    }
-
-    private static string SizeToString(long size) {
-        if(size >= 1099511627776) {
-            return decimal.Round((decimal)(Math.Round(size / 10995116277.76)*0.01), 2) + " TiB";
-        } else if(size >= 1073741824) {
-            return decimal.Round((decimal)(Math.Round(size / 10737418.24)*0.01), 2) + " GiB";
-        } else if(size >= 1048576) {
-            return decimal.Round((decimal)(Math.Round(size / 10485.76)*0.01), 2) + " MiB";
-        } else if(size >= 1024) {
-            return decimal.Round((decimal)(Math.Round(size / 10.24)*0.01), 2) + " KiB";
-        } else return size + " bytes";
     }
 }
