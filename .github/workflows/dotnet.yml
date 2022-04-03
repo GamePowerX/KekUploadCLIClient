@@ -6,126 +6,83 @@ on:
     branches: master
       
 jobs:
-  buildLinux:
+  prepare: 
     runs-on: ubuntu-latest
-    
     outputs:
-      build_number: ${{ steps.buildnumber.outputs.build_number }}
+      BUILD_ID: ${{ steps.buildnumber.outputs.build_number }}
+      SHA_SHORT: ${{ steps.commithash.outputs.sha_short }}
+      RELEASE_ID: ${{ steps.release.outputs.release_id }}
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 6.0.x
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet publish -c release -r linux-x64 -p:PublishSingleFile=true --self-contained false
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v2.3.1
-      with:
-        # Artifact name
-        name: KekUploadCLIClient_Linux # optional, default is artifact
-        # A file, directory or wildcard pattern that describes what to upload
-        path: KekUploadCLIClient/bin/Release/net6.0/linux-x64/publish/KekUploadCLIClient
-        # The desired behavior if no files are found using the provided path.
-    - name: Set outputs
-      id: vars
-      run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-    - name: Check outputs
-      run: echo ${{ steps.vars.outputs.sha_short }}
-    - name: Generate build number
-      id: buildnumber
-      uses: einaregilsson/build-number@v3 
-      with:
-        token: ${{secrets.github_token}}
-          
-    - name: Upload binaries to release
-      uses: svenstaro/upload-release-action@v2
-      with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: KekUploadCLIClient/bin/Release/net6.0/linux-x64/publish/KekUploadCLIClient
-        asset_name: KekUploadCLIClient-linux-amd64
-        tag: "build_${{ env.BUILD_NUMBER }}"
-        release_name: ${{ steps.vars.outputs.sha_short }}
-        prerelease: true
-        
-  buildWindows:
-    needs: buildLinux
-
-    runs-on: windows-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 6.0.x
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet publish -c release -r win-x64 -p:PublishSingleFile=true --self-contained false
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v2.3.1
-      with:
-        # Artifact name
-        name: KekUploadCLIClient_Windows # optional, default is artifact
-        # A file, directory or wildcard pattern that describes what to upload
-        path: KekUploadCLIClient/bin/release/net6.0/win-x64/publish/KekUploadCLIClient.exe
-        # The desired behavior if no files are found using the provided path.
-    - name: Set outputs
-      id: vars
-      run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-    - name: Check outputs
-      run: echo ${{ steps.vars.outputs.sha_short }}
-    
-    - name: Upload binaries to release
-      uses: svenstaro/upload-release-action@v2
-      with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: KekUploadCLIClient/bin/Release/net6.0/win-x64/publish/KekUploadCLIClient.exe
-        asset_name: KekUploadCLIClient-windows-amd64.exe
-        tag: "build_${{ needs.buildLinux.outputs.build_number }}"
-        release_name: ${{ steps.vars.outputs.sha_short }}
-        prerelease: true
-        
-  buildMacOs:
-    needs: buildLinux
-
-    runs-on: macos-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 6.0.x
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet publish -c release -r osx-x64 -p:PublishSingleFile=true --self-contained false      
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v2.3.1
-      with:
-        # Artifact name
-        name: KekUploadCLIClient_MacOs # optional, default is artifact
-        # A file, directory or wildcard pattern that describes what to upload
-        path: KekUploadCLIClient/bin/Release/net6.0/osx-x64/publish/KekUploadCLIClient
-        # The desired behavior if no files are found using the provided path.
-        
-    - name: Set outputs
-      id: vars
-      run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-    - name: Check outputs
-      run: echo ${{ steps.vars.outputs.sha_short }}
+      - uses: actions/checkout@v2
       
-    - name: Upload binaries to release
-      uses: svenstaro/upload-release-action@v2
+      - name: Set outputs
+        id: commithash
+        run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+      
+      - name: Generate build number
+        id: buildnumber
+        uses: einaregilsson/build-number@v3 
+        with:
+          token: ${{ secrets.github_token }}
+          
+      - name: Create a release
+        id: release
+        uses: KotwOSS/pipe-to-release@2.0.3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+          skip_errors: true
+
+          draft: true
+          prerelease: true
+
+          tag: "build_${{ steps.buildnumber.outputs.build_number }}"
+          release_name: "build:${{ steps.commithash.outputs.sha_short }}"
+          release_body: "This is an automated build"
+
+  buildMatrix:
+    name: Publish for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    needs: prepare
+
+     strategy:
+        fail-fast: false
+        matrix:
+          include:
+          - os: ubuntu-latest
+            build: dotnet publish -c release -r linux-x64 -p:PublishSingleFile=true --self-contained false
+            filemap: |
+              KekUploadCLIClient/bin/Release/net6.0/linux-x64/publish/KekUploadCLIClient>KekUploadCLIClient-linux-amd64
+                         
+          - os: windows-latest
+            build: dotnet publish -c release -r win-x64 -p:PublishSingleFile=true --self-contained false
+            filemap: |
+              KekUploadCLIClient/bin/Release/net6.0/win-x64/publish/KekUploadCLIClient.exe>KekUploadCLIClient-windows-amd64.exe
+            
+          - os: macos-latest
+            build: dotnet publish -c release -r osx-x64 -p:PublishSingleFile=true --self-contained false
+            filemap: |
+              KekUploadCLIClient/bin/Release/net6.0/osx-x64/publish/KekUploadCLIClient>KekUploadCLIClient-macos-amd64
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
       with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: KekUploadCLIClient/bin/Release/net6.0/osx-x64/publish/KekUploadCLIClient
-        asset_name: KekUploadCLIClient-macos-amd64
-        tag: "build_${{ needs.buildLinux.outputs.build_number }}"
-        release_name: ${{ steps.vars.outputs.sha_short }}
-        prerelease: true
+        dotnet-version: 6.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: ${{ matrix.build }}
+    - name: Pipe files to release
+      uses: KotwOSS/pipe-to-release@2.0.3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+        filemap: ${{ matrix.filemap }}
+
+        skip_errors: true
+
+        release_id: ${{ needs.prepare.outputs.RELEASE_ID }}
