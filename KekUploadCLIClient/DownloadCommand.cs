@@ -8,8 +8,8 @@ public class DownloadCommand : ConsoleCommand
     private const int Success = 0;
     private const int Failure = 2;
     
-    public string FileLocation { get; set; }
-    public string DownloadUrl { get; set; }
+    public string? FileLocation { get; set; }
+    public string? DownloadUrl { get; set; }
 
     public DownloadCommand()
     {
@@ -22,29 +22,40 @@ public class DownloadCommand : ConsoleCommand
 
     public override int Run(string[] remainingArguments)
     {
-        Program.WriteLine("Starting with the download!");
-        Program.WriteLine("");
-        ProgressBar progressBar = new ProgressBar();
+        if (DownloadUrl != null && FileLocation != null)
+        {
+            Program.WriteLine("Starting with the download!");
+            Program.WriteLine("");
+            var progressBar = new ProgressBar();
 
-        var client = new DownloadClient();
-        client.ProgressChangedEvent += (size, downloaded, percentage) =>
-        {
-            if (size != null)
+            var client = new DownloadClient();
+            client.ProgressChangedEvent += (size, downloaded, percentage) =>
             {
-                Program.WriteLine("Downloaded " + Utils.SizeToString(downloaded) + " of " + Utils.SizeToString((long)size) + "!");
-            }else Program.WriteLine("Downloaded " + Utils.SizeToString(downloaded) + "!");
-            progressBar.SetProgress((float)(percentage != null ? percentage : 0));
-        };
-        try
-        {
-            client.DownloadFile(DownloadUrl, FileLocation);
-            Program.WriteLine("Successfully downloaded file to: " + Path.GetFullPath(FileLocation));
-            return Success; 
+                if (size != null)
+                {
+                    Program.WriteLine("Downloaded " + Utils.SizeToString(downloaded) + " of " +
+                                      Utils.SizeToString((long) size) + "!");
+                }
+                else Program.WriteLine("Downloaded " + Utils.SizeToString(downloaded) + "!");
+
+                progressBar.SetProgress((float) (percentage ?? 0));
+            };
+            try
+            {
+                client.DownloadFile(DownloadUrl, FileLocation);
+                Program.WriteLine("Successfully downloaded file to: " + Path.GetFullPath(FileLocation));
+                return Success;
+            }
+            catch (KekException e)
+            {
+                Program.WriteLine("Could not download the file! Are you sure you entered a correct url?");
+                Program.WriteLine("Exception: " + e.Message);
+                if(e.Error!=null)
+                    Program.WriteLine("Server Response Error: " + e.Error);
+                return Failure;
+            }
         }
-        catch (KekException e)
-        {
-            Program.WriteLine("Could not download the file! Are you sure you entered a correct url?");
-            return Failure;
-        }
+        Program.WriteLine("Please enter a valid url and a file location!");
+        return Failure;
     }
 }

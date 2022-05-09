@@ -11,9 +11,9 @@ namespace KekUploadCLIClient
 {
     class Program
     {
-        public static string version = "1.0.0";
+        public const string Version = "1.0.0.3";
 
-        private static TextWriter console;
+        private static TextWriter? _console;
 
         public static int Main(string[] args)
         {
@@ -28,12 +28,12 @@ namespace KekUploadCLIClient
             if (builder.ToString().ToLower().Contains(" -s true") || builder.ToString().ToLower().Contains(" --silent true"))
             {
                 Silent = true;
-                console = TextWriter.Null;
+                _console = TextWriter.Null;
                 return ConsoleCommandDispatcher.DispatchCommand(commands, args, TextWriter.Null);
             }
             Silent = false;
-            console = Console.Out;
-            Console.WriteLine("KekUploadCLIClient v" + version + " made by CraftingDragon007 and KekOnTheWorld.");
+            _console = Console.Out;
+            Console.WriteLine("KekUploadCLIClient v" + Version + " made by CraftingDragon007 and KekOnTheWorld.");
             return ConsoleCommandDispatcher.DispatchCommand(commands, args, Console.Out);
         }
         
@@ -45,7 +45,7 @@ namespace KekUploadCLIClient
         public static bool Silent { get; set; }
         public static void WriteLine(string text)
         {
-            console.WriteLine(text);
+            _console?.WriteLine(text);
         }
     }
 }

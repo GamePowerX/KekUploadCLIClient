@@ -9,8 +9,8 @@ public class UploadCommand : ConsoleCommand
     private const int Success = 0;
     private const int Failure = 2;
     
-    public string FileLocation { get; set; }
-    public string ApiBaseUrl { get; set; }
+    public string? FileLocation { get; set; }
+    public string? ApiBaseUrl { get; set; }
     public int ChunkSize { get; set; }
 
     public UploadCommand()
@@ -25,6 +25,7 @@ public class UploadCommand : ConsoleCommand
 
     public override int Run(string[] remainingArguments)
     {
+        if (FileLocation == null || ApiBaseUrl == null) return Failure;
         var file = Path.GetFullPath(FileLocation);
         if(!File.Exists(file))
         {
@@ -34,7 +35,7 @@ public class UploadCommand : ConsoleCommand
         var fileInfo = new FileInfo(file);
         ChunkSize = ChunkSize <= 0 ? 1024 * 2 : ChunkSize;
         var client = new UploadClient(ApiBaseUrl, ChunkSize);
-        ProgressBar progressBar = null;
+        ProgressBar? progressBar = null;
         client.UploadStreamCreateEvent += (sender, args) =>
         {
             Program.WriteLine("Upload Stream ID: " + args.UploadStreamId);
@@ -51,21 +52,24 @@ public class UploadCommand : ConsoleCommand
                 announcedChunks = true;
                 Program.WriteLine("Chunks: " + args.TotalChunkCount);
             }
-            progressBar.SetProgress((args.CurrentChunkCount+1) * 100 / (float)args.TotalChunkCount);
+            progressBar?.SetProgress((args.CurrentChunkCount+1) * 100 / (float)args.TotalChunkCount);
             Program.WriteLine("Chunk Hash: " + args.ChunkHash);
         };
         
         try
         {
-           var url = client.UploadFile(file);
-           Program.WriteLine("");
-           Program.WriteLine("Finished the upload! Download Url: " + url);
-           if(Program.Silent) Console.WriteLine(url);
-           return Success;
+            var url = client.UploadFile(file);
+            Program.WriteLine("");
+            Program.WriteLine("Finished the upload! Download Url: " + url);
+            if(Program.Silent) Console.WriteLine(url);
+            return Success;
         }
         catch (KekException e)
         {
             Program.WriteLine("An error occured during upload: " + e.Message);
+            Program.WriteLine("Exception: " + e.Message);
+            if(e.Error!=null)
+                Program.WriteLine("Server Response Error: " + e.Error);
             return Failure;
         }
     }
