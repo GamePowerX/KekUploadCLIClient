@@ -34,6 +34,7 @@ public class UploadCommand : ConsoleCommand
         }
         var fileInfo = new FileInfo(file);
         ChunkSize = ChunkSize <= 0 ? 1024 * 2 : ChunkSize;
+        ChunkSize *= 1024;
         var client = new UploadClient(ApiBaseUrl, ChunkSize);
         ProgressBar? progressBar = null;
         client.UploadStreamCreateEvent += (sender, args) =>
