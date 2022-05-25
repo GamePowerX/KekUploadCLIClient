@@ -8,10 +8,11 @@ public class UploadCommand : ConsoleCommand
 {
     private const int Success = 0;
     private const int Failure = 2;
-    
-    public string? FileLocation { get; set; }
-    public string? ApiBaseUrl { get; set; }
-    public int ChunkSize { get; set; }
+
+    private string? FileLocation { get; set; }
+    private string? ApiBaseUrl { get; set; }
+    private int ChunkSize { get; set; }
+    private bool Name { get; set; }
 
     public UploadCommand()
     {
@@ -21,6 +22,13 @@ public class UploadCommand : ConsoleCommand
         HasRequiredOption("u|url=", "The base Api Url from the upload Server", p => ApiBaseUrl = p);
         HasOption("c|chunkSize=", "The Size of the Chunks for uploading (in KiB)", t => ChunkSize = t == null ? 1024*1024*2 : Convert.ToInt32(t));
         HasOption("s|silent=", "If the command should be executed silently", t =>{});
+        var actionNameWasExecuted = false;
+        HasOption("n|name=", "If the file should be uploaded with a name", t =>
+        {
+            Name = t == null || Convert.ToBoolean(t);
+            actionNameWasExecuted = true;
+        });
+        if(!actionNameWasExecuted) Name = true;
     }
 
     public override int Run(string[] remainingArguments)
@@ -35,7 +43,7 @@ public class UploadCommand : ConsoleCommand
         var fileInfo = new FileInfo(file);
         ChunkSize = ChunkSize <= 0 ? 1024 * 2 : ChunkSize;
         ChunkSize *= 1024;
-        var client = new UploadClient(ApiBaseUrl, ChunkSize);
+        var client = new UploadClient(ApiBaseUrl, ChunkSize, Name);
         ProgressBar? progressBar = null;
         client.UploadStreamCreateEvent += (sender, args) =>
         {
@@ -59,7 +67,7 @@ public class UploadCommand : ConsoleCommand
         
         try
         {
-            var url = client.UploadFile(file);
+            var url = client.Upload(new UploadItem(file));
             Program.WriteLine("");
             Program.WriteLine("Finished the upload! Download Url: " + url);
             if(Program.Silent) Console.WriteLine(url);

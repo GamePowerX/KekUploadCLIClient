@@ -7,9 +7,9 @@ public class DownloadCommand : ConsoleCommand
 {
     private const int Success = 0;
     private const int Failure = 2;
-    
-    public string? FileLocation { get; set; }
-    public string? DownloadUrl { get; set; }
+
+    private string? FileLocation { get; set; }
+    private string? DownloadUrl { get; set; }
 
     public DownloadCommand()
     {

@@ -1,23 +1,17 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
+﻿using System.Text;
 using ManyConsole;
 
 namespace KekUploadCLIClient
 {
-    class Program
+    public class Program
     {
-        public const string Version = "1.0.0.3";
+        public const string Version = "1.0.0.4";
 
         private static TextWriter? _console;
 
         public static int Main(string[] args)
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             foreach (var s in args)
             {
                 builder.Append(s);
@@ -42,7 +36,7 @@ namespace KekUploadCLIClient
             return ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(Program));
         }
 
-        public static bool Silent { get; set; }
+        public static bool Silent { get; private set; }
         public static void WriteLine(string text)
         {
             _console?.WriteLine(text);
