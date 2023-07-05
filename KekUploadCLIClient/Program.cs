@@ -1,46 +1,47 @@
 ﻿using System.Text;
 using ManyConsole;
 
-namespace KekUploadCLIClient
+namespace KekUploadCLIClient;
+
+public class Program
 {
-    public class Program
+    public const string Version = "1.0.0.5";
+
+    private static TextWriter? _console;
+
+    public static bool Silent { get; private set; }
+
+    public static int Main(string[] args)
     {
-        public const string Version = "1.0.0.4";
-
-        private static TextWriter? _console;
-
-        public static int Main(string[] args)
+        var builder = new StringBuilder();
+        foreach (var s in args)
         {
-            var builder = new StringBuilder();
-            foreach (var s in args)
-            {
-                builder.Append(s);
-                builder.Append(" ");
-            }
-            
-            var commands = GetCommands();
-            if (builder.ToString().ToLower().Contains(" -s true") || builder.ToString().ToLower().Contains(" --silent true"))
-            {
-                Silent = true;
-                _console = TextWriter.Null;
-                return ConsoleCommandDispatcher.DispatchCommand(commands, args, TextWriter.Null);
-            }
-            Silent = false;
-            _console = Console.Out;
-            Console.WriteLine("KekUploadCLIClient v" + Version + " made by CraftingDragon007 and KekOnTheWorld.");
-            return ConsoleCommandDispatcher.DispatchCommand(commands, args, Console.Out);
-        }
-        
-        public static IEnumerable<ConsoleCommand> GetCommands()
-        {
-            return ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(Program));
+            builder.Append(s);
+            builder.Append(' ');
         }
 
-        public static bool Silent { get; private set; }
-        public static void WriteLine(string text)
+        var commands = GetCommands();
+        if (builder.ToString().ToLower().Contains(" -s true") ||
+            builder.ToString().ToLower().Contains(" --silent true"))
         {
-            _console?.WriteLine(text);
+            Silent = true;
+            _console = TextWriter.Null;
+            return ConsoleCommandDispatcher.DispatchCommand(commands, args, TextWriter.Null);
         }
+
+        Silent = false;
+        _console = Console.Out;
+        Console.WriteLine("KekUploadCLIClient v" + Version + " made by CraftingDragon007 and KekOnTheWorld.");
+        return ConsoleCommandDispatcher.DispatchCommand(commands, args, Console.Out);
+    }
+
+    public static IEnumerable<ConsoleCommand> GetCommands()
+    {
+        return ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(Program));
+    }
+
+    public static void WriteLine(string text)
+    {
+        _console?.WriteLine(text);
     }
 }
-
