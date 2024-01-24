@@ -31,6 +31,13 @@ public class UploadCommand : ConsoleCommand
             actionWithChunkHashingWasExecuted = true;
         });
         if (!actionWithChunkHashingWasExecuted) WithChunkHashing = true;
+        var actionWithoutWebSocket = false;
+        HasOption("w|no-websocket=", "If the file shouldn't be uploaded using web sockets", t =>
+        {
+            WithoutWebSocket = t == null || Convert.ToBoolean(t);
+            actionWithoutWebSocket = true;
+        });
+        if (!actionWithoutWebSocket) WithoutWebSocket = true;
     }
 
     private string? FileLocation { get; set; }
@@ -38,6 +45,7 @@ public class UploadCommand : ConsoleCommand
     private int ChunkSize { get; set; }
     private bool Name { get; set; }
     private bool WithChunkHashing { get; set; }
+    private bool WithoutWebSocket { get; set; }
 
     public override int Run(string[] remainingArguments)
     {
@@ -78,7 +86,14 @@ public class UploadCommand : ConsoleCommand
 
         try
         {
-            var url = client.Upload(new UploadItem(file));
+            var tokenSource = new CancellationTokenSource();
+            Console.CancelKeyPress += delegate
+            {
+                tokenSource.Cancel(false);
+                Program.WriteLine("");
+                Program.WriteLine("Upload Cancelled.");
+            };
+            var url = client.Upload(new UploadItem(file), tokenSource.Token, !WithoutWebSocket);
             Program.WriteLine("");
             Program.WriteLine("Finished the upload! Download Url: " + url);
             if (Program.Silent) Console.WriteLine(url);
@@ -90,6 +105,10 @@ public class UploadCommand : ConsoleCommand
             Program.WriteLine("Exception: " + e.Message);
             if (e.Error != null)
                 Program.WriteLine("Server Response Error: " + e.Error);
+            return Failure;
+        }
+        catch (OperationCanceledException)
+        {
             return Failure;
         }
     }

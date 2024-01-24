@@ -40,7 +40,14 @@ public class DownloadCommand : ConsoleCommand
             };
             try
             {
-                client.Download(DownloadUrl, new DownloadItem(FileLocation));
+                var tokenSource = new CancellationTokenSource();
+                Console.CancelKeyPress += delegate
+                {
+                    tokenSource.Cancel(false);
+                    Program.WriteLine("");
+                    Program.WriteLine("Download Cancelled.");
+                };
+                client.Download(DownloadUrl, new DownloadItem(FileLocation), tokenSource.Token);
                 Program.WriteLine("Successfully downloaded file to: " + Path.GetFullPath(FileLocation));
                 return Success;
             }
@@ -50,6 +57,10 @@ public class DownloadCommand : ConsoleCommand
                 Program.WriteLine("Exception: " + e.Message);
                 if (e.Error != null)
                     Program.WriteLine("Server Response Error: " + e.Error);
+                return Failure;
+            }
+            catch (OperationCanceledException)
+            {
                 return Failure;
             }
         }

@@ -5,14 +5,16 @@ namespace KekUploadCLIClient;
 
 public class Program
 {
-    public const string Version = "1.0.0.5";
-
     private static TextWriter? _console;
 
     public static bool Silent { get; private set; }
 
     public static int Main(string[] args)
     {
+        var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+        var fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
+        var version = fvi.FileVersion;
+        
         var builder = new StringBuilder();
         foreach (var s in args)
         {
@@ -31,7 +33,7 @@ public class Program
 
         Silent = false;
         _console = Console.Out;
-        Console.WriteLine("KekUploadCLIClient v" + Version + " made by CraftingDragon007 and KekOnTheWorld.");
+        Console.WriteLine("KekUploadCLIClient v" + (version ?? "unknown") + " made by CraftingDragon007 and KekOnTheWorld.");
         return ConsoleCommandDispatcher.DispatchCommand(commands, args, Console.Out);
     }
 
