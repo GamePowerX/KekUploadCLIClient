@@ -20,8 +20,8 @@ public class Program
         }
 
         var commands = GetCommands();
-        if (builder.ToString().ToLower().Contains(" -s true") ||
-            builder.ToString().ToLower().Contains(" --silent true"))
+        if (builder.ToString().Contains(" -s true", StringComparison.CurrentCultureIgnoreCase) ||
+            builder.ToString().Contains(" --silent true", StringComparison.CurrentCultureIgnoreCase))
         {
             Silent = true;
             _console = TextWriter.Null;
