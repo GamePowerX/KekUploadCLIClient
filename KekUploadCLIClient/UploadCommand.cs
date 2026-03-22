@@ -31,13 +31,19 @@ public class UploadCommand : ConsoleCommand
             actionWithChunkHashingWasExecuted = true;
         });
         if (!actionWithChunkHashingWasExecuted) WithChunkHashing = true;
-        var actionWithoutWebSocket = false;
-        HasOption("w|no-websocket=", "If the file shouldn't be uploaded using web sockets", t =>
+        var actionWebSocketWasExecuted = false;
+        HasOption("w|websocket=", "If the file should be uploaded using web sockets", t =>
         {
-            WithoutWebSocket = t == null || Convert.ToBoolean(t);
-            actionWithoutWebSocket = true;
+            UseWebSocket = t == null || Convert.ToBoolean(t);
+            actionWebSocketWasExecuted = true;
         });
-        if (!actionWithoutWebSocket) WithoutWebSocket = true;
+        HasOption("no-websocket=", "If the file should not be uploaded using web sockets", t =>
+        {
+            var disableWebSocket = t == null || Convert.ToBoolean(t);
+            UseWebSocket = !disableWebSocket;
+            actionWebSocketWasExecuted = true;
+        });
+        if (!actionWebSocketWasExecuted) UseWebSocket = true;
     }
 
     private string? FileLocation { get; set; }
@@ -45,7 +51,7 @@ public class UploadCommand : ConsoleCommand
     private int ChunkSize { get; set; }
     private bool Name { get; set; }
     private bool WithChunkHashing { get; set; }
-    private bool WithoutWebSocket { get; set; }
+    private bool UseWebSocket { get; set; }
 
     public override int Run(string[] remainingArguments)
     {
@@ -93,7 +99,7 @@ public class UploadCommand : ConsoleCommand
                 Program.WriteLine("");
                 Program.WriteLine("Upload Cancelled.");
             };
-            var url = client.Upload(new UploadItem(file), tokenSource.Token, !WithoutWebSocket);
+            var url = client.Upload(new UploadItem(file), tokenSource.Token, UseWebSocket);
             Program.WriteLine("");
             Program.WriteLine("Finished the upload! Download Url: " + url);
             if (Program.Silent) Console.WriteLine(url);
